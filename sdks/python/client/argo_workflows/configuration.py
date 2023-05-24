@@ -149,10 +149,9 @@ conf = argo_workflows.Configuration(
         """
         self.discard_unknown_keys = discard_unknown_keys
         self.disabled_client_side_validations = disabled_client_side_validations
-        self.logger = {}
         """Logging Settings
         """
-        self.logger["package_logger"] = logging.getLogger("argo_workflows")
+        self.logger = {"package_logger": logging.getLogger("argo_workflows")}
         self.logger["urllib3_logger"] = logging.getLogger("urllib3")
         self.logger_format = '%(asctime)s %(levelname)s %(message)s'
         """Log format
@@ -262,9 +261,7 @@ conf = argo_workflows.Configuration(
 
         :return: The configuration object.
         """
-        if cls._default is not None:
-            return copy.deepcopy(cls._default)
-        return Configuration()
+        return Configuration() if cls._default is None else copy.deepcopy(cls._default)
 
     @property
     def logger_file(self):
@@ -362,9 +359,8 @@ conf = argo_workflows.Configuration(
             self.refresh_api_key_hook(self)
         key = self.api_key.get(identifier, self.api_key.get(alias) if alias is not None else None)
         if key:
-            prefix = self.api_key_prefix.get(identifier)
-            if prefix:
-                return "%s %s" % (prefix, key)
+            if prefix := self.api_key_prefix.get(identifier):
+                return f"{prefix} {key}"
             else:
                 return key
 
@@ -373,15 +369,11 @@ conf = argo_workflows.Configuration(
 
         :return: The token for basic HTTP authentication.
         """
-        username = ""
-        if self.username is not None:
-            username = self.username
-        password = ""
-        if self.password is not None:
-            password = self.password
-        return urllib3.util.make_headers(
-            basic_auth=username + ':' + password
-        ).get('authorization')
+        username = self.username if self.username is not None else ""
+        password = self.password if self.password is not None else ""
+        return urllib3.util.make_headers(basic_auth=f'{username}:{password}').get(
+            'authorization'
+        )
 
     def auth_settings(self):
         """Gets Auth Settings dict for api client.
